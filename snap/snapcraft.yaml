@@ -88,10 +88,6 @@ parts:
       - libffi-dev
       - libssl-dev
       - make
-#      - libbz2-dev
-#      - libsnappy-dev
-#      - libunwind-dev
-#      - git
       - software-properties-common
       - libsystemd-dev
       - python3.7-dev
@@ -102,26 +98,18 @@ parts:
 
 layout:
   /usr/lib/girepository-1.0:
-    bind: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
+    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/girepository-1.0
   /usr/lib/gio:
-    bind: $SNAP/usr/lib/x86_64-linux-gnu/gio
-#app:
-#  sink-service:
-#    plugs: [dbus-svc, sink0-serial, sink1-serial, sink2-serial, sink3-serial, sink4-serial, sink5-serial, sink6-serial, sink7-serial, sink8-serial, sink9-serial]    
-
-
-
-#  transport-service:
-#    plugin: python
+    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/gio
     
 
 slots:
-  wirepas-sink: # name that is used with 'snap connect' on slots side
+  wirepas-sink:
     interface: dbus
     bus: system
     name: com.wirepas.sink.sink0
 plugs:
-  wirepas-dbus: # name that is used with 'snap connect' on slots side
+  wirepas-dbus:
     interface: dbus
     bus: system
     name: com.wirepas.sink.sink0
