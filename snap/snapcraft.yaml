@@ -1,0 +1,129 @@
+name: wirepas-gateway-ben # you probably want to 'snapcraft register <name>'
+base: core18 # the base snap is the execution environment for this snap
+version: '0.1' # just for humans, typically '1.2+git' or '1.3.2'
+summary: A gateway for Wirepas Mesh nodes # 79 char long summary
+description: Connect your Wirepas Mesh Network to the internet.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: devmode # use 'strict' once you have the right plugs and slots
+
+base: core18
+
+architectures:
+  - build-on: amd64
+  - build-on: armhf
+  - build-on: arm64
+
+apps:
+  sink-service:    
+    command: sinkService
+    slots:
+     - wirepas-sink
+    plugs:
+     - serial-port
+  wm-gw:
+    command: python3.7 -u $SNAP/bin/wm-gw
+    plugs:
+     - home
+     - network
+    environment:
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.7/site-packages/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-x86_64.egg/
+
+parts:
+  sink-service:
+    plugin: nil
+    source-type: git
+    source: https://github.com/wirepas/gateway.git
+    source-tag: v1.3.0
+    source-subdir: gateway/sink_service
+#    artifacts:
+#     - sinkService
+    override-pull: |
+      snapcraftctl pull 
+      git clone https://github.com/wirepas/c-mesh-api.git
+      mv c-mesh-api/ sink_service/c-mesh-api
+    build-packages:
+      - gcc
+      - make
+    override-build: |
+      cd sink_service/
+      make
+      cp -r build/sinkService ${SNAPCRAFT_PART_INSTALL}
+  transport:
+    plugin: nil
+    stage-packages:
+      - python3.7
+      - python3-gi
+      - libglib2.0-0
+      - libgirepository-1.0-1
+      - libgirepository1.0-dev
+      - libffi6
+    source: .
+    override-build: |
+      snapcraftctl build
+      /bin/bash -c "/usr/bin/python3.7 <(wget -q -O - https://bootstrap.pypa.io/get-pip.py) --prefix $SNAPCRAFT_PART_INSTALL --no-compile"
+      cp -r /usr/lib/python3.7/distutils $SNAPCRAFT_PART_INSTALL/lib/python3.7/site-packages/distutils
+      find $SNAPCRAFT_PART_INSTALL -type d -name __pycache__ -print0 | xargs -0 rm -rf
+      rm -rf venv
+      /usr/bin/python3.7 -m venv venv
+      wget https://download.gnome.org/sources/pygobject/3.36/pygobject-3.36.1.tar.xz
+      tar -xf pygobject-3.36.1.tar.xz
+      export PYGOBJECT_WITHOUT_PYCAIRO="1"
+      echo 'PYGOBJECT_WITHOUT_PYCAIRO="1"' >> venv/bin/activate
+      echo "export PYGOBJECT_WITHOUT_PYCAIRO" >> venv/bin/activate
+      cd pygobject-3.36.1/
+      ./../venv/bin/python3 setup.py build
+      ./../venv/bin/python3 setup.py install
+      cd ..
+      venv/bin/python3 -m pip install wheel
+      venv/bin/python3 -m pip install PyGObject
+      venv/bin/python3 -m pip install wirepas-gateway
+      find venv -type d -name __pycache__ -print0 | xargs -0 rm -rf
+      cp -r venv/* ${SNAPCRAFT_PART_INSTALL}
+    build-packages:
+      - wget
+      - python3.7
+      - python3.7-venv
+      - python3.7-distutils
+      - build-essential
+      - gcc
+      - libffi-dev
+      - libssl-dev
+      - make
+#      - libbz2-dev
+#      - libsnappy-dev
+#      - libunwind-dev
+#      - git
+      - software-properties-common
+      - libsystemd-dev
+      - python3.7-dev
+      - pkg-config
+      - libglib2.0-dev
+      - libgirepository1.0-dev
+
+
+layout:
+  /usr/lib/girepository-1.0:
+    bind: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
+  /usr/lib/gio:
+    bind: $SNAP/usr/lib/x86_64-linux-gnu/gio
+#app:
+#  sink-service:
+#    plugs: [dbus-svc, sink0-serial, sink1-serial, sink2-serial, sink3-serial, sink4-serial, sink5-serial, sink6-serial, sink7-serial, sink8-serial, sink9-serial]    
+
+
+
+#  transport-service:
+#    plugin: python
+    
+
+slots:
+  wirepas-sink: # name that is used with 'snap connect' on slots side
+    interface: dbus
+    bus: system
+    name: com.wirepas.sink.sink0
+plugs:
+  wirepas-dbus: # name that is used with 'snap connect' on slots side
+    interface: dbus
+    bus: system
+    name: com.wirepas.sink.sink0
