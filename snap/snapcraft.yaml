@@ -7,8 +7,6 @@ description: Connect your Wirepas Mesh Network to the internet.
 grade: devel # must be 'stable' to release into candidate/stable channels
 confinement: devmode # use 'strict' once you have the right plugs and slots
 
-base: core18
-
 architectures:
   - build-on: amd64
   - build-on: armhf
