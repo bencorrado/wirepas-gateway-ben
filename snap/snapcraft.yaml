@@ -25,7 +25,8 @@ apps:
      - home
      - network
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.7/site-packages/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-x86_64.egg/
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.7/site-packages/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-x86_64.egg/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-armv7l.egg:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-arm64.egg
+
 
 parts:
   sink-service:
