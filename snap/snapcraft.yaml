@@ -29,20 +29,6 @@ apps:
 
 
 parts:
-  protobuf-libs:
-    plugin: make
-    source: https://github.com/protocolbuffers/protobuf/releases/download/v3.9.0/protobuf-python-3.9.0.tar.gz
-    build-packages:
-      - autoconf
-      - automake
-      - libtool
-      - curl
-      - make
-      - g++
-    override-build: |
-      ./configure
-      snapcraftctl build
-      ldconfig
   sink-service:
     plugin: nil
     source-type: git
@@ -61,7 +47,6 @@ parts:
       make
       cp -r build/sinkService ${SNAPCRAFT_PART_INSTALL}
   transport:
-    after: [protobuf-libs]
     plugin: nil
     stage-packages:
       - python3.7
@@ -70,9 +55,11 @@ parts:
       - libgirepository-1.0-1
       - libgirepository1.0-dev
       - libffi6
-    source: .
+    source: https://github.com/protocolbuffers/protobuf/releases/download/v3.9.0/protobuf-python-3.9.0.tar.gz
     override-build: |
+      ./configure
       snapcraftctl build
+      ldconfig
       /bin/bash -c "/usr/bin/python3.7 <(wget -q -O - https://bootstrap.pypa.io/get-pip.py) --prefix $SNAPCRAFT_PART_INSTALL --no-compile"
       cp -r /usr/lib/python3.7/distutils $SNAPCRAFT_PART_INSTALL/lib/python3.7/site-packages/distutils
       find $SNAPCRAFT_PART_INSTALL -type d -name __pycache__ -print0 | xargs -0 rm -rf
@@ -87,13 +74,28 @@ parts:
       ./../venv/bin/python3 setup.py build
       ./../venv/bin/python3 setup.py install
       cd ..
-      venv/bin/python3 -m pip install wheel
       venv/bin/python3 -m pip install six
-      venv/bin/python3 -m pip install protobuf==3.9.0 --install-option="--cpp_implementation"
+      wget https://github.com/protocolbuffers/protobuf/releases/download/v3.9.0/protobuf-python-3.9.0.tar.gz
+      tar -xzvf protobuf-python-3.9.0.tar.gz
+      cd protobuf-python-3.9.0
+      ./configure
+      make
+      make install
+      ldconfig
+      cd python
+      ./../../venv/bin/python3 setup.py build --cpp_implementation
+      ./../../venv/bin/python3 setup.py install --cpp_implementation
+      cd ../..
+      venv/bin/python3 -m pip install wheel
       venv/bin/python3 -m pip install wirepas-gateway
       find venv -type d -name __pycache__ -print0 | xargs -0 rm -rf
       cp -r venv/* ${SNAPCRAFT_PART_INSTALL}
     build-packages:
+      - autoconf
+      - automake
+      - libtool
+      - curl
+      - g++
       - wget
       - python3.7
       - python3.7-venv
