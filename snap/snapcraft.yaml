@@ -90,7 +90,6 @@ parts:
       venv/bin/python3 -m pip install wheel
       venv/bin/python3 -m pip install six
       venv/bin/python3 -m pip install protobuf==3.9.0 --install-option="--cpp_implementation"
-#      venv/bin/python3 -m pip install PyGObject
       venv/bin/python3 -m pip install wirepas-gateway
       find venv -type d -name __pycache__ -print0 | xargs -0 rm -rf
       cp -r venv/* ${SNAPCRAFT_PART_INSTALL}
