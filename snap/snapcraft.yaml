@@ -32,8 +32,7 @@ apps:
      - home
      - network
     environment:
-      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.7/site-packages/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-x86_64.egg/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-armv7l.egg:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-aarch64.egg
-
+      PYTHONPATH: $PYTHONPATH:$SNAP/lib/python3.7/site-packages/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-x86_64.egg/:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-armv7l.egg:$SNAP/lib/python3.7/site-packages/PyGObject-3.36.1-py3.7-linux-aarch64.egg:$SNAP/lib/python3.7/site-packages/protobuf-3.9.0-py3.7-linux-x86_64.egg:$SNAP/lib/python3.7/site-packages/protobuf-3.9.0-py3.7-linux-armv7l.egg:$SNAP/lib/python3.7/site-packages/protobuf-3.9.0-py3.7-linux-aarch64.egg
 
 parts:
   sink-service:
@@ -53,6 +52,11 @@ parts:
       cd sink_service/
       make
       cp -r build/sinkService ${SNAPCRAFT_PART_INSTALL}
+  sink-service-script:
+    plugin: dump
+    source: .
+    stage:
+     - sink-service.sh
   transport:
     plugin: nil
     stage-packages:
@@ -97,6 +101,7 @@ parts:
       venv/bin/python3 -m pip install wirepas-gateway
       find venv -type d -name __pycache__ -print0 | xargs -0 rm -rf
       cp -r venv/* ${SNAPCRAFT_PART_INSTALL}
+      cp -r ${SNAPCRAFT_STAGE}/usr/local/lib/* ${SNAPCRAFT_PART_INSTALL}/usr/lib/
     build-packages:
       - autoconf
       - automake
