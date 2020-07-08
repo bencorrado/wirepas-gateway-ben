@@ -1,0 +1,95 @@
+#!/bin/sh -e
+
+if [ "$AUTOSINKSETUP" == "false"]; then
+  exit 0
+fi
+
+#Get the path for the serial port that was just connected
+path="$(snapctl get --slot :serial-port path)"
+
+#We should also get the other attributes for USB devices, this may allow us to determine baud rate in the future
+usb-vendor="$(snapctl get --slot :serial-port usb-vendor)"
+usb-product="$(snapctl get --slot :serial-port usb-product)"
+
+#Reset the sink if possible with hardware
+resetPin="$(snapctl get --slot :serial-port resetPin)"
+if [ -z "$resetPin"]; then
+  echo "There is no reset pin defined, proceeding without a hardware sink reset."
+else
+  #Reset the sink before trying auto baud testing
+  resetPolarity="$(snapctl get --slot :serial-port resetPin)"
+  if ["$resetPolarity" == "high"]; then
+    echo "out" > /sys/class/gpio/gpio${resetPin}/direction
+    #toggle the pin high for 1sec 
+    echo "1" > /sys/class/gpio/gpio${resetPin}/value
+    sleep 1
+    echo "0" > /sys/class/gpio/gpio${resetPin}/value
+  else   #assume the reset is low
+    #toggle the pin low for 100ms
+    echo "out" > /sys/class/gpio/gpio${resetPin}/direction
+    #toggle the pin low for 1sec 
+    echo "0" > /sys/class/gpio/gpio${resetPin}/value
+    sleep 1
+    echo "1" > /sys/class/gpio/gpio${resetPin}/value
+  fi
+  echo "Reset the sink for 1s."
+fi
+
+# TODO: Should we try to use hub-ctrl to reset USB devices too? Probably to risky to disable other USB stuff without significant testing.
+
+
+# Try opening the serial port and detecting the baud rate
+# Baud rates allowed by gateway (default options are 115200, 125000, 1000000)
+baudRates="125000 115200 1000000"
+
+# Iterate to find the baud rate in a for loop
+for baud in $baudRate; do
+  echo "Trying ${baud} baud with sink at ${path}"
+  stty -F $path $baud
+  echo -ne 'my message to send over serial\n' > $path #this needs to be changed to something that will give a deterministic response from the DualMCU API
+  #probably need some sort of expect script here to wait for a valid serial response
+  #if proper response, exit the loop
+  #else continue
+  #if 1000000 error out as we have completed all the tests and not found an acceptable baud rate
+  if ["$baud" == "1000000"]; then
+    echo "The sink at ${path} did not respond to an expected baud rated.  This sink was not automatically connected, please fix the issue or connect it manually by setting environmental variable AUTOSINKSETUP='false'."
+    exit 1
+  fi
+done
+
+
+
+# Set the port, baud rate and active/inactive associated with the sinkID to a file or something that can be accessed
+# This will be executed by the sink service daemon later as something like `sinkService -p <uart_port> -b <bitrate> -i <sink_id>`
+
+# Read list of sinks in use (0-9 are possible), see if any were previously used for this same device, if so connect to that, if not select one not in use, prefer one never used.
+active="never"
+newSinkID = 0
+INPUT=$SNAP_DATA/sinkList.csv
+OLDIFS=$IFS
+IFS=','
+[ ! -f $INPUT ] && { echo "$INPUT file not found"; exit 99; }
+while read sinkID sinkBaud sinkPath sinkRstPin sinkRstPol sinkPlugged sinkActive
+do
+  if [ "$sinkPath" == "$path" ]; then
+    i = $sinkID
+    active = "inactive"
+    break
+  fi
+  #find the lowest unused number  TODO: I think this logic assumes it is in numerical order...
+  if [ "$sinkID" == "$newSinkID"]; then
+    newSinkID++
+  fi
+  #TODO: if no sink numbers are free, pick one that is not in use
+done < $INPUT
+IFS=$OLDIFS
+
+
+echo "${baud},${path},${resetPin},${resetPolarity},plugged,${active}" > $SNAP_DATA/sink${newSinkID}.conf
+snapctl start sinkService${newSinkID} --enable
+
+
+#Settings file structure:
+#sinkID,baud,port,resetPin,resetPolarity,currently plugged (plugged/unplugged),actively in use by a sinkService (never,active,inactive)
+#0,115200,/dev/ttyUSB0,11,high,plugged,active
+#1,1000000,/dev/ttyACM0,,,unplugged,inactive

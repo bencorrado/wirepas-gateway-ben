@@ -12,13 +12,20 @@ architectures:
   - build-on: armhf
   - build-on: arm64
 
+hooks:
+  connect-plug-serial-port:
+    plugs: [serial-port]
+
+
 apps:
-  sink-service:    
-    command: sinkService
-    slots:
-     - wirepas-sink
-    plugs:
-     - serial-port
+  sinkService0:    
+    command: sink-service.sh -i 0
+    slots: [wirepas-sink-0]
+    plugs: [serial-port]
+    daemon: simple
+    restart-condition: always
+    restart-delay: 5s
+
   wm-gw:
     command: python3.7 -u $SNAP/bin/wm-gw
     plugs:
@@ -121,12 +128,12 @@ layout:
     
 
 slots:
-  wirepas-sink:
+  wirepas-sink-0:
     interface: dbus
     bus: system
     name: com.wirepas.sink.sink0
 plugs:
-  wirepas-dbus:
+  wirepas-dbus-0:
     interface: dbus
     bus: system
     name: com.wirepas.sink.sink0

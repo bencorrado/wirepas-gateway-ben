@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+# Create a sink list tracking file
+touch INPUT=$SNAP_DATA/sinkList.csv
+
+#Stop all the sink services until a sink is connected to them (this will automatically happen when a serial port is connected using `snap connect`)
+snapctl stop sinkService0 --disable
+snapctl stop sinkService1 --disable
+snapctl stop sinkService2 --disable
+snapctl stop sinkService3 --disable
+snapctl stop sinkService4 --disable
+snapctl stop sinkService5 --disable
+snapctl stop sinkService6 --disable
+snapctl stop sinkService7 --disable
+snapctl stop sinkService8 --disable
+snapctl stop sinkService9 --disable
