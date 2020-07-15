@@ -19,13 +19,19 @@ hooks:
 
 apps:
   sinkService0:    
-    command: sink-service.sh -i 0
+    command: /bin/sh $SNAP/sink-service0.sh
     slots: [wirepas-sink-0]
     plugs: [serial-port]
     daemon: simple
     restart-condition: always
     restart-delay: 5s
-
+  sinkService1:    
+    command: /bin/sh $SNAP/sink-service1.sh
+    slots: [wirepas-sink-1]
+    plugs: [serial-port]
+    daemon: simple
+    restart-condition: always
+    restart-delay: 5s
   wm-gw:
     command: python3.7 -u $SNAP/bin/wm-gw
     plugs:
@@ -56,7 +62,8 @@ parts:
     plugin: dump
     source: .
     stage:
-     - sink-service.sh
+     - sink-service0.sh
+     - sink-service1.sh
   transport:
     plugin: nil
     stage-packages:
@@ -66,11 +73,9 @@ parts:
       - libgirepository-1.0-1
       - libgirepository1.0-dev
       - libffi6
-    source: https://github.com/protocolbuffers/protobuf/releases/download/v3.9.0/protobuf-python-3.9.0.tar.gz
+    source: .
     override-build: |
-      ./configure
       snapcraftctl build
-      ldconfig
       /bin/bash -c "/usr/bin/python3.7 <(wget -q -O - https://bootstrap.pypa.io/get-pip.py) --prefix $SNAPCRAFT_PART_INSTALL --no-compile"
       cp -r /usr/lib/python3.7/distutils $SNAPCRAFT_PART_INSTALL/lib/python3.7/site-packages/distutils
       find $SNAPCRAFT_PART_INSTALL -type d -name __pycache__ -print0 | xargs -0 rm -rf
@@ -88,7 +93,7 @@ parts:
       venv/bin/python3 -m pip install six
       wget https://github.com/protocolbuffers/protobuf/releases/download/v3.9.0/protobuf-python-3.9.0.tar.gz
       tar -xzvf protobuf-python-3.9.0.tar.gz
-      cd protobuf-python-3.9.0
+      cd protobuf-3.9.0/
       ./configure
       make
       make install
@@ -137,8 +142,16 @@ slots:
     interface: dbus
     bus: system
     name: com.wirepas.sink.sink0
+  wirepas-sink-1:
+    interface: dbus
+    bus: system
+    name: com.wirepas.sink.sink1
 plugs:
   wirepas-dbus-0:
     interface: dbus
     bus: system
     name: com.wirepas.sink.sink0
+  wirepas-dbus-1:
+    interface: dbus
+    bus: system
+    name: com.wirepas.sink.sink1

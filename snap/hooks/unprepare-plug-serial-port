@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 #Get the path for the serial port that is requested to be disconnected
-path="$(snapctl get --slot :serial-port path)"
+sPath="$(snapctl get --slot :serial-port path)"
 
 
 # Read list of sinks in use (0-9 are possible), to determine which one this plug was for
@@ -11,7 +11,7 @@ IFS=','
 [ ! -f $INPUT ] && { echo "$INPUT file not found"; exit 99; }
 while read sinkID sinkBaud sinkPath sinkRstPin sinkRstPol sinkPlugged sinkActive
 do
-  if [ "$sinkPath" == "$path" ]; then
+  if [[ "$sinkPath" == "$sPath" ]]; then
     #Disable the sink service associated with this plug
     snapctl stop sinkService${sinkID} --disable
     echo "Sink service ${sinkID} disabled due to disconnecting plug."
